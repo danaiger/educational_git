@@ -64,6 +64,9 @@ def parse_args ():
     branch_parser.add_argument ('name')
     branch_parser.add_argument ('start_point', default='@', type=oid, nargs='?')
 
+    status_parser = commands.add_parser ('status')
+    status_parser.set_defaults (func=status)
+
     return parser.parse_args ()
 
 
@@ -139,3 +142,12 @@ def k (args):
             stdin=subprocess.PIPE) as proc:
         proc.communicate (dot.encode ())
     subprocess.run (['open', '/tmp/ugit-k.png'])
+
+
+def status (args):
+    HEAD = base.get_oid ('@')
+    branch = base.get_branch_name ()
+    if branch:
+        print (f'On branch {branch}')
+    else:
+        print (f'HEAD detached at {HEAD[:10]}')
