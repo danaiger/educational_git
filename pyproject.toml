@@ -16,7 +16,7 @@ where = ["."]
 include = ["ugit*"]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "ruff"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
