@@ -28,32 +28,32 @@ def init():
 RefValue = namedtuple("RefValue", ["symbolic", "value"])
 
 
-def update_ref(ref, value, deref=True):
-    ref = _get_ref_internal(ref, deref)[0]
+def update_ref(ref_name: str, value: RefValue, deref: bool = True) -> None:
+    target_ref = _get_ref_internal(ref_name, deref)[0]
 
     assert value.value
     if value.symbolic:
-        value = f"ref: {value.value}"
+        content = f"ref: {value.value}"
     else:
-        value = value.value
+        content = value.value
 
-    ref_path = f"{GIT_DIR}/{ref}"
+    ref_path = f"{GIT_DIR}/{target_ref}"
     os.makedirs(os.path.dirname(ref_path), exist_ok=True)
     with open(ref_path, "w") as f:
-        f.write(value)
+        f.write(content)
 
 
-def get_ref(ref, deref=True):
-    return _get_ref_internal(ref, deref)[1]
+def get_ref(ref_name: str, deref: bool = True) -> RefValue:
+    return _get_ref_internal(ref_name, deref)[1]
 
 
-def delete_ref(ref, deref=True):
-    ref = _get_ref_internal(ref, deref)[0]
-    os.remove(f"{GIT_DIR}/{ref}")
+def delete_ref(ref_name: str, deref: bool = True) -> None:
+    target_ref = _get_ref_internal(ref_name, deref)[0]
+    os.remove(f"{GIT_DIR}/{target_ref}")
 
 
-def _get_ref_internal(ref, deref):
-    ref_path = f"{GIT_DIR}/{ref}"
+def _get_ref_internal(ref_name: str, deref: bool) -> tuple[str, RefValue]:
+    ref_path = f"{GIT_DIR}/{ref_name}"
     value = None
     if os.path.isfile(ref_path):
         with open(ref_path) as f:
@@ -61,25 +61,26 @@ def _get_ref_internal(ref, deref):
 
     symbolic = bool(value) and value.startswith("ref:")
     if symbolic:
-        value = value.split(":", 1)[1].strip()
+        symbolic_target = value.split(":", 1)[1].strip()
         if deref:
-            return _get_ref_internal(value, deref=True)
+            return _get_ref_internal(symbolic_target, deref=True)
+        value = symbolic_target
 
-    return ref, RefValue(symbolic=symbolic, value=value)
+    return ref_name, RefValue(symbolic=symbolic, value=value)
 
 
-def iter_refs(prefix="", deref=True):
-    refs = ["HEAD", "MERGE_HEAD"]
+def iter_refs(prefix: str = "", deref: bool = True):
+    ref_names = ["HEAD", "MERGE_HEAD"]
     for root, _, filenames in os.walk(f"{GIT_DIR}/refs/"):
         root = os.path.relpath(root, GIT_DIR)
-        refs.extend(f"{root}/{name}" for name in filenames)
+        ref_names.extend(f"{root}/{name}" for name in filenames)
 
-    for refname in refs:
-        if not refname.startswith(prefix):
+    for ref_name in ref_names:
+        if not ref_name.startswith(prefix):
             continue
-        ref = get_ref(refname, deref=deref)
-        if ref.value:
-            yield refname, ref
+        ref_value = get_ref(ref_name, deref=deref)
+        if ref_value.value:
+            yield ref_name, ref_value
 
 
 @contextmanager
